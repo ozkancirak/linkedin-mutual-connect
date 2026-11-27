@@ -55,3 +55,32 @@ function closePopups() {
 }
 
 
+// Bağlan'a basar ve davetin gittiğini doğrular: butonun etiketi ya da yazısı değişir ("Beklemede" vb.) ya da
+// "not ekle" penceresi çıkar (onu notsuz gönderir). Sabit bekleme yok. Gitmediyse {ok:false, why: sebep}.
+async function sendOne(b, wait = 2000) {
+  const snap = () => (b.getAttribute("aria-label") || "") + "|" + (b.innerText || "").trim();
+  const before = snap();
+  b.click();
+  for (let i = 0; i < wait / 40; i++) {
+    await sleep(40);
+    const send = noteSendBtn();
+    if (send) { send.click(); await sleep(120); return { ok: true }; }
+    if (!b.isConnected || snap() !== before) return { ok: true }; // buton tepki verdi
+  }
+  return { ok: false, why: popupText() };
+}
+
+// Gönderildi: kaydet, kopyayı soluklaştır, sayaçları güncelle
+async function markDone(m) {
+  m.sent = true;
+  markSentUrl(m.url); // bir daha önerme
+  m.clone.style.boxShadow = "";
+  m.clone.style.opacity = ".55";
+  const cb = [...m.clone.querySelectorAll("button")].find((x) => isConnect(x));
+  if (cb) { cb.textContent = "Gönderildi"; cb.disabled = true; }
+  const { sent = [] } = await chrome.storage.local.get("sent");
+  await chrome.storage.local.set({ sent: [...sent.filter((t) => Date.now() - t < 7 * DAY), Date.now()] });
+  await refresh();
+  pop();
+}
+
