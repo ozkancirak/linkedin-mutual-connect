@@ -59,3 +59,11 @@ const markSentUrl = (u) => {
 };
 const markSent = (card) => markSentUrl(card && profileUrl(card));
 
+const marks = []; // {card, item, clone, src, url, isNew}: üstteki alandaki her kişi
+const byUrl = new Map(); // profil adresi -> kayıt (aynı kişiyi iki kez eklememek için)
+const marked = new WeakSet();
+let armed = false; // "Taramayı başlat"a basılınca açılır: ondan sonra gelen yeni kartlar da kendiliğinden taranır
+const onGrow = () => location.pathname.startsWith("/mynetwork/");
+const OUTLINE = ";outline:3px solid #0a66c2;outline-offset:2px;border-radius:10px";
+const firstConnect = () => [...document.querySelectorAll("button")].find((b) => isConnect(b) && !box?.contains(b));
+
