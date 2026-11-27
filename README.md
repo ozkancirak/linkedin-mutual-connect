@@ -1,7 +1,7 @@
 # LinkedIn Mutual Connect
 
 [![CI](../../actions/workflows/ci.yml/badge.svg)](../../actions/workflows/ci.yml)
-![version](https://img.shields.io/badge/version-0.1.0-blue)
+![version](https://img.shields.io/badge/version-0.1.1-blue)
 ![license](https://img.shields.io/badge/license-MIT-green)
 
 Chrome extension (Manifest V3) that scans LinkedIn's **"People you may know"** page, lists the people you share

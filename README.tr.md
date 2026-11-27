@@ -1,7 +1,7 @@
 # LinkedIn Mutual Connect
 
 [![CI](../../actions/workflows/ci.yml/badge.svg)](../../actions/workflows/ci.yml)
-![sürüm](https://img.shields.io/badge/s%C3%BCr%C3%BCm-0.1.0-blue)
+![sürüm](https://img.shields.io/badge/s%C3%BCr%C3%BCm-0.1.1-blue)
 ![lisans](https://img.shields.io/badge/lisans-MIT-green)
 
 LinkedIn'in **"Tanıyor olabileceğiniz kişiler"** sayfasını tarayan, **ortak bağlantısı çok olan** kişileri sayfanın
