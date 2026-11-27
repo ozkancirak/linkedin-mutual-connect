@@ -22,7 +22,8 @@ en üstünde listeleyen ve onlara bağlantı daveti gönderen Chrome eklentisi (
   Sayfayı daha önce taradıysan tekrar taramaz. Tarama ve gönderim aynı anda da yürüyebilir.
 - "Davetinize not eklensin mi?" penceresini otomatik geçer (**notsuz** gönderir).
 - Liste sayfasında daveti gitmeyen kişileri, eklentinin yönettiği bir sekmede profilini açıp gönderir ve sekmeyi kapatır.
-- Bulunan kişileri 7 gün hatırlar (sayfayı yenileyince kaybolmaz) ve daha önce davet gönderdiğin kişiyi bir daha önermez.
+- Bulunan kişileri 7 gün hatırlar (sayfayı yenileyince kaybolmaz) ve bu sürede daha önce davet gönderdiğin kişiyi bir
+  daha önermez.
 - Türkçe ve İngilizce LinkedIn arayüzüyle çalışır.
 
 ## Kurulum (paketlenmemiş)
@@ -53,10 +54,15 @@ Hap istediğin yere sürüklenir, konum hatırlanır. Hap ekranın üstündeyse 
 
 ## Sınırlamalar
 
-- LinkedIn arayüzünü sık değiştirir, seçicilerin güncellenmesi gerekebilir. Mantık sahte sayfalar ve birim testlerle
-  sınanıyor, CI'da gerçek bir LinkedIn hesabıyla değil.
+- LinkedIn arayüzünü sık değiştirir, seçicilerin güncellenmesi gerekebilir. Birim testleri sadece saf yardımcıları
+  kapsıyor (buton ve ortak sayısı tanıma, davet sayacı). Sayfa mantığı ne sahte sayfalarla ne de gerçek bir LinkedIn
+  hesabıyla sınanıyor.
 - Arayüz metinleri Türkçe.
-- Çok sayıda daveti hızlı göndermek LinkedIn'e otomasyon gibi görünür. Özellikle yeni hesaplarda günlük limiti düşük tut.
+- Çalışırken LinkedIn sekmesini ön planda tut: Chrome arka plandaki sekmelerde zamanlayıcıları yavaşlatır, tarama ve
+  gönderim çok yavaşlayabilir.
+- Çok sayıda daveti hızlı göndermek LinkedIn'e otomasyon gibi görünür. Davetler yaklaşık 0,5–1 saniye arayla gider, o
+  yüzden özellikle yeni hesaplarda günlük limiti düşük tut. Haftalık sayaç yalnızca bu eklentinin gönderdiği davetleri
+  sayar, elle ya da başka cihazdan gönderdiklerini saymaz.
 
 ## Proje yapısı
 

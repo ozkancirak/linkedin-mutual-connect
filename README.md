@@ -23,8 +23,8 @@ Chrome extension (Manifest V3) that scans LinkedIn's **"People you may know"** p
 - Handles the "Add a note to your invitation?" dialog automatically (sends **without a note**).
 - People whose invite could not be sent from the list page are opened in their profile in a tab managed by the
   extension, where the invite is sent and the tab is closed.
-- Remembers found people for 7 days (so a page refresh does not lose them) and never suggests someone you already
-  invited.
+- Remembers found people for 7 days (so a page refresh does not lose them) and, during that time, does not suggest
+  someone you already invited again.
 - Works with the English and Turkish LinkedIn interface.
 
 ## Install (unpacked)
@@ -56,10 +56,15 @@ top of the screen.
 
 ## Limitations
 
-- LinkedIn changes its markup often; selectors may need updates. The logic is covered by mock pages and unit tests,
-  not by a live LinkedIn account in CI.
+- LinkedIn changes its markup often; selectors may need updates. The unit tests only cover the pure helpers (button
+  and mutual-count detection, the invite counter). The page logic is tested neither against mock pages nor against a
+  live LinkedIn account.
 - The interface texts are in Turkish.
-- Sending many invites quickly looks like automation to LinkedIn. Keep the daily limit low, especially on new accounts.
+- Keep the LinkedIn tab in the foreground while it runs: Chrome slows down timers in background tabs, which can make
+  scanning and sending very slow.
+- Sending many invites quickly looks like automation to LinkedIn. Invites go out about 0.5–1 second apart, so keep the
+  daily limit low, especially on new accounts. The weekly counter only counts invites sent by this extension, not the
+  ones you send by hand or from other devices.
 
 ## Project layout
 
