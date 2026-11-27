@@ -4,7 +4,11 @@ root.addEventListener("click", (e) => {
   const t = e.target.closest("button");
   if (!t) return;
   if (t.id === "pill") return dragged ? (dragged = false) : set({ open: !s.open });
-  if (t.id === "go") return s.status === "running" ? set({ status: "idle", msg: "Durduruluyor…" }) : s.dry ? scan() : run();
+  if (t.id === "go") {
+    if (s.status !== "running") return s.dry ? scan() : run();
+    runId++; // çalışan döngüler bir sonraki adımda kendiliğinden çıkar, durumu bir daha ezmez
+    return set({ status: "idle", msg: "Durduruldu" });
+  }
   if (t.dataset.mode) {
     if (s.status === "running") return; // çalışırken mod değişmesin
     s.dry = t.dataset.mode === "scan";

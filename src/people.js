@@ -241,9 +241,9 @@ new MutationObserver(() => {
 }).observe(document.body, { childList: true, subtree: true });
 
 // Kaydırdıktan sonra yeni buton ya da yeni yükseklik gelene kadar bekler (en fazla ms). Geldiyse hemen true döner.
-async function waitGrow(n0, h0, ms) {
+async function waitGrow(n0, h0, ms, id) {
   const count = () => [...document.querySelectorAll("button")].filter((b) => isConnect(b) && !box?.contains(b)).length;
-  for (const t0 = Date.now(); Date.now() - t0 < ms && s.status === "running"; ) {
+  for (const t0 = Date.now(); Date.now() - t0 < ms && alive(id); ) {
     await sleep(50);
     if (count() > n0 || document.documentElement.scrollHeight > h0) { await sleep(80); return true; } // gelenler otursun
   }
@@ -254,13 +254,14 @@ let scanned = false; // sayfa sonuna kadar tarandı mı? Tarandıysa "Bul ve gö
 
 // Kendisi aşağı kaydırıp tüm kartları yükler, sonra uygunlara gider.
 // keep=true: bitince durumu "running" bırakır (arkasından gönderme sürecek). Doğal bittiyse true döner.
-async function scan(keep) {
+// id: bu turun numarası. Gönderme döngüsü kendi numarasını verir, tek başına başlatılınca yenisi alınır.
+async function scan(keep, id = ++runId) {
   armed = true;
   set({ status: "running", msg: "" });
   // Durma ölçütü "yeni uygun kişi çıkmadı" DEĞİL, "sayfa artık uzamıyor ve yeni buton gelmiyor":
   // çoğu kartta ortak bağlantı yok, o yüzden eşleşme sayısına bakmak erken bırakıyordu.
   let idle = 0;
-  for (let step = 0; s.status === "running" && idle < 3 && step < 150; step++) { // 150 tur: ne olur ne olmaz üst sınır
+  for (let step = 0; alive(id) && idle < 3 && step < 150; step++) { // 150 tur: ne olur ne olmaz üst sınır
     scanOnce();
     const btns = [...document.querySelectorAll("button")].filter((b) => isConnect(b) && !box?.contains(b));
     const n0 = btns.length, h0 = document.documentElement.scrollHeight;
@@ -270,14 +271,15 @@ async function scan(keep) {
     last?.scrollIntoView({ block: "start", behavior: "instant" });
     // Son kart yerinden oynamadıysa zaten sayfanın dibindeyiz: uzun bekleme, kısa kontrol yap
     const moved = last ? Math.abs(last.getBoundingClientRect().top - top0) > 2 : true;
-    const grew = await waitGrow(n0, h0, moved ? 3000 : 1200); // yeni kartlar gelir gelmez devam et, sabit bekleme yok
+    const grew = await waitGrow(n0, h0, moved ? 3000 : 1200, id); // yeni kartlar gelir gelmez devam et, sabit bekleme yok
     scanOnce();
     idle = grew ? 0 : idle + 1; // 3 kez (yaklaşık 9 sn) üst üste yeni bir şey gelmezse bitti
   }
-  const completed = s.status === "running"; // Durdur'a basılmadan doğal olarak bitti
+  const completed = alive(id); // Durdur'a basılmadan doğal olarak bitti
   if (completed) scanned = true;
   console.table(marks.map((m) => ({ ad: m.clone.innerText.split("\n")[0], ortak: m.n })));
   if (keep) return completed;
+  if (id !== runId) return; // Durdur'a basıldı (ya da yeni tur başladı): durumu o taraf zaten ayarladı, ezme
   if (marks.length) box.scrollIntoView({ behavior: "smooth", block: "start" }); // üstteki alana kendisi kaydırır
   set({
     status: "idle",

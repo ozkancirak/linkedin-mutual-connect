@@ -86,14 +86,14 @@ async function markDone(m) {
 
 // Bir kişiyi profil sekmesinde gönderir: arka plan sekmeyi açar, sekmedeki eklenti Bağlantı kur + "Not olmadan gönder"i
 // yapar ve sonucu "connectResult" olarak yazar. Burada o sonuç beklenir, bitince sekme kapatılır.
-async function viaProfile(m) {
+async function viaProfile(m, id) {
   if (!/^https?:/.test(m.url || "")) return false;
   const t0 = Date.now();
   await chrome.storage.local.set({ pendingConnect: { url: m.url, name: m.name, t: t0, auto: true } });
   const res = await chrome.runtime.sendMessage({ type: "openProfile", url: m.url }).catch(() => null);
   if (!res) { console.warn("[Otomatik Bağlan] sekme açılamadı: eklentiyi chrome://extensions sayfasında yeniden yükle"); return false; }
   let ok = false;
-  for (let i = 0; i < 160 && s.status === "running"; i++) { // en çok ~40 sn
+  for (let i = 0; i < 160 && alive(id); i++) { // en çok ~40 sn
     await sleep(250);
     const { connectResult: r } = await chrome.storage.local.get("connectResult");
     if (r && r.url === m.url && r.t >= t0) { ok = r.ok; break; }
@@ -107,17 +107,19 @@ async function viaProfile(m) {
 // Taranmadıysa taramayla gönderim AYNI ANDA yürür: bir kişi bulunur bulunmaz sıradaki davet gider,
 // taramanın bitmesi beklenmez. Gönderen hep o an bulunanlar arasında ortağı en çok olanı seçer.
 async function run() {
+  const id = ++runId;
+  // Durumu sadece bu tur hâlâ güncelse yaz: Durdur'a basılmış eski tur, yeni turun durumunu ezmesin
+  const done = (o) => id === runId && set(o);
   set({ status: "running", msg: "" });
   let scanning = !scanned; // tarama hâlâ sürüyor mu
-  let scanOk = true; // tarama doğal bitti mi (Durdur'a basılmadıysa)
-  if (scanning) scan(true).then((ok) => { scanning = false; scanOk = ok; });
+  if (scanning) scan(true, id).then(() => { scanning = false; });
   else {
-    if (!marks.some((m) => !m.sent)) return set({ status: "idle", msg: "Gönderilecek kişi yok" });
+    if (!marks.some((m) => !m.sent)) return done({ status: "idle", msg: "Gönderilecek kişi yok" });
     box.scrollIntoView({ block: "start", behavior: "instant" }); // gönderimi üstteki alandan izle
   }
 
   // Bir kişiyi dener. "" = gitti, "LIMIT" = LinkedIn limit uyarısı verdi, başka yazı = gitmedi (sebep)
-  const tryOne = async (m, retry) => {
+  const attempt = async (m, retry) => {
     let b = m.src?.isConnected ? m.src : null;
     if (b && /^https?:/.test(m.url || "")) { // saklı buton hâlâ bu kişinin kartında mı?
       const c = cardOf(b);
@@ -139,26 +141,31 @@ async function run() {
     await markDone(m);
     return LIMIT.test(popupText()) ? "LIMIT" : ""; // gitti ama LinkedIn limit uyarısı da verdiyse dur
   };
+  // busy: bu kişi şu an gönderiliyor. Durdur + Başlat ile gelen yeni tur aynı kişiye ikinci kez tıklamasın.
+  const tryOne = async (m, retry) => {
+    m.busy = true;
+    try { return await attempt(m, retry); } finally { m.busy = false; }
+  };
   // Günlük/haftalık sınıra ulaşıldıysa durma durumunu döner
   const gate = async () => {
     await refresh();
     if (s.today >= s.cap) return { status: "idle", msg: "Günlük limite ulaşıldı 🎉" };
     if (s.week >= WEEK_CAP) return { status: "limit", msg: "Haftalık limite ulaşıldı" };
   };
-  const stopLimit = () => set({ status: "limit", msg: "LinkedIn davet limitine ulaştı" });
+  const stopLimit = () => done({ status: "limit", msg: "LinkedIn davet limitine ulaştı" });
 
   const failed = []; // [kişi, sebep]
   let streak = 0; // üst üste gitmeyen davet sayısı
   const tried = new Set();
   let seq = 0; // gönderim sırası numarası
-  while (s.status === "running") { // 1. tur: hızlı, bulundukça gönder
-    const next = marks.filter((m) => !m.sent && !tried.has(m)).sort((a, b) => b.n - a.n)[0];
+  while (alive(id)) { // 1. tur: hızlı, bulundukça gönder
+    const next = marks.filter((m) => !m.sent && !m.busy && !tried.has(m)).sort((a, b) => b.n - a.n)[0];
     if (!next) {
       if (scanning) { await sleep(100); continue; } // tarama yeni kişi bulana kadar bekle
       break; // tarama bitti ve sıra boş
     }
     const stop = await gate();
-    if (stop) { scanning = false; return set(stop); }
+    if (stop) { scanning = false; return done(stop); }
     tried.add(next);
     if (next.badge) next.badge.textContent = `#${++seq} · ${next.n} ortak`; // gönderim sırası kartta görünsün
     const r = await tryOne(next, false);
@@ -166,20 +173,20 @@ async function run() {
     if (r) {
       failed.push([next, r]);
       if (r !== "kart sayfada bulunamadı" && ++streak >= 10) { // LinkedIn yanıt vermiyor: ısrar etme, hesabı yorma
-        return set({ status: "limit", msg: `Üst üste ${streak} davet gitmedi: ${r.slice(0, 60)}. Biraz bekleyip tekrar dene.` });
+        return done({ status: "limit", msg: `Üst üste ${streak} davet gitmedi: ${r.slice(0, 60)}. Biraz bekleyip tekrar dene.` });
       }
     } else streak = 0;
     await sleep(rand(...GAP)); // sıradakine geç
   }
-  if (!scanOk && s.status !== "running") return set({ status: "idle", msg: "Durduruldu" });
+  if (!alive(id)) return; // Durdur'a basıldı: durumu o taraf zaten ayarladı
 
-  if (failed.length && s.status === "running") { // 2. tur: sayfada gitmeyenleri (çoğu "not ekle" isteyenler) profil sekmesini KENDİSİ açıp gönderir
+  if (failed.length) { // 2. tur: sayfada gitmeyenleri (çoğu "not ekle" isteyenler) profil sekmesini KENDİSİ açıp gönderir
     for (const f of [...failed]) {
-      if (s.status !== "running") break;
+      if (!alive(id)) break;
       const stop = await gate();
-      if (stop) return set(stop);
-      set({ msg: `Profil sekmesinde gönderiliyor (${failed.length} kişi kaldı)` });
-      const ok = await viaProfile(f[0]);
+      if (stop) return done(stop);
+      done({ msg: `Profil sekmesinde gönderiliyor (${failed.length} kişi kaldı)` });
+      const ok = await viaProfile(f[0], id);
       if (ok) {
         failed.splice(failed.indexOf(f), 1);
         f[0].sent = true;
@@ -192,13 +199,12 @@ async function run() {
       } else f[1] = "profil sekmesinde de gitmedi";
       await sleep(rand(...GAP));
     }
-    box.scrollIntoView({ block: "start", behavior: "instant" });
+    if (alive(id)) box.scrollIntoView({ block: "start", behavior: "instant" });
   }
   if (failed.length) console.log("[Otomatik Bağlan] gitmeyen davetler:", failed.map(([m, why]) => m.clone.innerText.split("\n")[1] + " → " + why));
   const sentAny = marks.some((m) => m.sent);
-  const msg = s.status !== "running" ? "Durduruldu"
-    : failed.length ? `${failed.length} davet gitmedi: ${failed[0][1].slice(0, 70)}`
+  const msg = failed.length ? `${failed.length} davet gitmedi: ${failed[0][1].slice(0, 70)}`
     : sentAny ? "Bitti" : "Gönderilecek kişi yok";
-  set({ status: "idle", msg });
+  done({ status: "idle", msg });
 }
 
