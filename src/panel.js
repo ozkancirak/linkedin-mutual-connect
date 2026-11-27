@@ -119,3 +119,26 @@ function info() {
     (plan ? `<b>${plan}</b> kişiye davet gönderilecek` : unsent ? "Günlük limite ulaşıldı" : "Gönderilecek kişi kalmadı");
 }
 
+function render() {
+  // Panel yönü: hapın üstünde panel kadar yer yoksa ve altı daha genişse aşağı aç
+  const pr = $("pill").getBoundingClientRect();
+  if (pr.height) s.down = pr.top < $("card").offsetHeight + 16 && innerHeight - pr.bottom > pr.top;
+  $("col").className = `col ${s.open ? "open" : ""} ${s.down ? "down" : ""} ${s.status} ${s.dry ? "scan" : "send"}`;
+  for (const k of ["min", "cap"]) if (root.activeElement !== $(k)) $(k).value = s[k]; // yazarken değeri ezme
+  // Tarama modunda halka "bulunan / görülen", gönderme modunda "bugün / limit"
+  $("num").textContent = s.dry ? s.found : `${s.today}/${s.cap}`;
+  let p = s.dry ? (s.seen ? s.found / s.seen : 0) : Math.min(1, s.today / s.cap); // tarama: bulunan / görülen
+  if (s.status === "running") p = Math.max(p, 0.22); // dönen yay görünsün
+  $("fg").style.strokeDashoffset = C * (1 - p);
+  $("fg2").style.strokeDashoffset = C2 * (1 - p);
+  $("wk").textContent = `${s.week}/${WEEK_CAP}`;
+  $("bar").style.width = `${Math.min(100, (s.week / WEEK_CAP) * 100)}%`;
+  // Yazı sadece önemli durumlarda (limit, hata, gönderim) çıkar. Tarama sayıları halkada.
+  $("tag").textContent = s.msg || (s.dry ? (s.found ? `${s.found} kişi` : "") : `${s.today}/${s.cap}`);
+  $("hint").innerHTML =
+    (s.msg ? s.msg + "<br>" : "") +
+    info();
+  $("seg").className = "seg " + (s.dry ? "scan" : "send");
+  root.querySelectorAll("[data-mode]").forEach((b) => b.classList.toggle("on", (b.dataset.mode === "scan") === s.dry));
+  $("go").textContent = s.status === "running" ? "Durdur" : s.dry ? "Taramayı başlat" : "Başlat ve gönder";
+}
