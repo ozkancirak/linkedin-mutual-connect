@@ -260,22 +260,27 @@ async function scan(keep, id = ++runId) {
   set({ status: "running", msg: "" });
   // Durma ölçütü "yeni uygun kişi çıkmadı" DEĞİL, "sayfa artık uzamıyor ve yeni buton gelmiyor":
   // çoğu kartta ortak bağlantı yok, o yüzden eşleşme sayısına bakmak erken bırakıyordu.
-  let idle = 0;
-  for (let step = 0; alive(id) && idle < 3 && step < 150; step++) { // 150 tur: ne olur ne olmaz üst sınır
-    scanOnce();
-    const btns = [...document.querySelectorAll("button")].filter((b) => isConnect(b) && !box?.contains(b));
-    const n0 = btns.length, h0 = document.documentElement.scrollHeight;
-    // Listenin son kartını ekranın üstüne getir: LinkedIn'de sayfayı çoğu zaman window değil içteki bir kutu
-    // kaydırıyor. scrollIntoView hangi kutu kayıyorsa onu kaydırır ve altındaki "daha fazla yükle"yi tetikler.
-    const last = btns.at(-1), top0 = last?.getBoundingClientRect().top;
-    last?.scrollIntoView({ block: "start", behavior: "instant" });
-    // Son kart yerinden oynamadıysa zaten sayfanın dibindeyiz: uzun bekleme, kısa kontrol yap
-    const moved = last ? Math.abs(last.getBoundingClientRect().top - top0) > 2 : true;
-    const grew = await waitGrow(n0, h0, moved ? 3000 : 1200, id); // yeni kartlar gelir gelmez devam et, sabit bekleme yok
-    scanOnce();
-    idle = grew ? 0 : idle + 1; // 3 kez (yaklaşık 9 sn) üst üste yeni bir şey gelmezse bitti
+  let idle = 0, crashed = false;
+  try {
+    for (let step = 0; alive(id) && idle < 3 && step < 150; step++) { // 150 tur: ne olur ne olmaz üst sınır
+      scanOnce();
+      const btns = [...document.querySelectorAll("button")].filter((b) => isConnect(b) && !box?.contains(b));
+      const n0 = btns.length, h0 = document.documentElement.scrollHeight;
+      // Listenin son kartını ekranın üstüne getir: LinkedIn'de sayfayı çoğu zaman window değil içteki bir kutu
+      // kaydırıyor. scrollIntoView hangi kutu kayıyorsa onu kaydırır ve altındaki "daha fazla yükle"yi tetikler.
+      const last = btns.at(-1), top0 = last?.getBoundingClientRect().top;
+      last?.scrollIntoView({ block: "start", behavior: "instant" });
+      // Son kart yerinden oynamadıysa zaten sayfanın dibindeyiz: uzun bekleme, kısa kontrol yap
+      const moved = last ? Math.abs(last.getBoundingClientRect().top - top0) > 2 : true;
+      const grew = await waitGrow(n0, h0, moved ? 3000 : 1200, id); // yeni kartlar gelir gelmez devam et, sabit bekleme yok
+      scanOnce();
+      idle = grew ? 0 : idle + 1; // 3 kez (yaklaşık 9 sn) üst üste yeni bir şey gelmezse bitti
+    }
+  } catch (e) { // beklenmedik hata (LinkedIn işaretlemesi değişti vb.): tarama biter, durum "running"de takılı kalmaz
+    crashed = true;
+    console.error("[Otomatik Bağlan] tarama hatası", e);
   }
-  const completed = alive(id); // Durdur'a basılmadan doğal olarak bitti
+  const completed = !crashed && alive(id); // Durdur'a basılmadan ve hata vermeden doğal olarak bitti
   if (completed) scanned = true;
   console.table(marks.map((m) => ({ ad: m.clone.innerText.split("\n")[0], ortak: m.n })));
   if (keep) return completed;
@@ -283,7 +288,7 @@ async function scan(keep, id = ++runId) {
   if (marks.length) box.scrollIntoView({ behavior: "smooth", block: "start" }); // üstteki alana kendisi kaydırır
   set({
     status: "idle",
-    msg: s.seen ? "" : "'Bağlan' butonu bulunamadı — seçici uyuşmuyor",
+    msg: crashed ? "Tarama hata verdi (konsola bak)" : s.seen ? "" : "'Bağlan' butonu bulunamadı — seçici uyuşmuyor",
   });
 }
 

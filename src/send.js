@@ -112,7 +112,7 @@ async function run() {
   const done = (o) => id === runId && set(o);
   set({ status: "running", msg: "" });
   let scanning = !scanned; // tarama hâlâ sürüyor mu
-  if (scanning) scan(true, id).then(() => { scanning = false; });
+  if (scanning) scan(true, id).finally(() => { scanning = false; }); // hata verse de bayrak düşer, yoksa döngü sonsuza dek bekler
   else {
     if (!marks.some((m) => !m.sent)) return done({ status: "idle", msg: "Gönderilecek kişi yok" });
     box.scrollIntoView({ block: "start", behavior: "instant" }); // gönderimi üstteki alandan izle
