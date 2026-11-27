@@ -142,3 +142,13 @@ function render() {
   root.querySelectorAll("[data-mode]").forEach((b) => b.classList.toggle("on", (b.dataset.mode === "scan") === s.dry));
   $("go").textContent = s.status === "running" ? "Durdur" : s.dry ? "Taramayı başlat" : "Başlat ve gönder";
 }
+const pop = () => {
+  const r = $("ring");
+  r.classList.remove("pop"); void r.offsetWidth; r.classList.add("pop");
+};
+const set = (o) => { Object.assign(s, o); render(); };
+async function refresh() {
+  const c = await counts();
+  set({ today: c.today, week: c.wk.length });
+}
+
