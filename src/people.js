@@ -182,3 +182,54 @@ async function restoreWhenReady() {
   restoring = false;
 }
 
+// Sayfadaki yeni kartlara bir kez bakar. Elle ya da otomatik kaydırma fark etmez.
+function scanOnce() {
+  let seen = 0, added = 0, first;
+  for (const b of document.querySelectorAll("button")) {
+    if (!isConnect(b) || box?.contains(b)) continue; // kendi kopyalarımıza bakma
+    seen++;
+    first ||= b;
+    const c = cardOf(b);
+    if (!c || marked.has(c)) continue;
+    const n = mutualCount(c.innerText);
+    if (n < s.min) continue;
+    // Profil bağlantısı (ad, fotoğraf) kartın üst kısmında, c'nin (ortak yazısı + buton) dışında kalıyor.
+    // O yüzden adresi bütün karttan ara; yoksa kişi hiç kaydedilmez ve yenileyince kaybolur.
+    const item = itemOf(c);
+    const url = personKey(item), old = url && cache[url];
+    if (old?.sent) { marked.add(c); continue; } // daha önce davet gönderdiğimiz kişiyi tekrar önerme
+    marked.add(c);
+    const prev = url && byUrl.get(url);
+    if (prev) { // yenileme sonrası geri yüklediğimiz kişi: kopyası zaten var, gerçek karta bağla
+      Object.assign(prev, { card: c, item, src: b });
+      item.style.cssText += OUTLINE;
+      continue;
+    }
+    added++;
+    try { ensureBox(first); } catch (e) {
+      console.error("[Otomatik Bağlan] üst alan oluşturulamadı", e);
+      set({ msg: "Üst alan oluşturulamadı (konsola bak)" });
+      continue;
+    }
+    const clone = item.cloneNode(true); // önce kopyala (çerçevesiz kalsın), sonra orijinali işaretle
+    item.style.cssText += OUTLINE; // kartın tamamı
+    if (url) { cache[url] = { n, t: Date.now(), sent: false, html: clone.outerHTML }; saveCache(); }
+    addEntry({ card: c, item, clone, src: b, url, isNew: !old }, n);
+  }
+  refreshBox();
+  if (seen !== s.seen || added) set({ found: marks.length, seen });
+  return added;
+}
+
+// Min. ortak değişince eski işaretleri sil, baştan bak
+function resetMarks() {
+  for (const m of marks) {
+    if (m.item) m.item.style.outline = "";
+    m.clone.remove();
+    if (m.card) marked.delete(m.card);
+  }
+  marks.length = 0;
+  byUrl.clear();
+  if (box) box.style.display = "none";
+}
+
