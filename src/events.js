@@ -63,3 +63,12 @@ root.addEventListener("pointerup", () => {
   drag = null;
 });
 
+// --- Sayfa takibi: sadece /mynetwork/ altında görün. Sayfa açılınca kendiliğinden hiçbir şey başlamaz. ---
+// LinkedIn bir SPA: sayfa yenilenmeden adres değişir, o yüzden adresi izliyoruz.
+let lastPath = "";
+setInterval(() => { // LinkedIn içeriği yeniden çizerken üstteki alanı silebilir, silinirse geri koy
+  if (box && !box.isConnected && marks.length && onGrow()) {
+    const f = firstConnect();
+    if (f) try { ensureBox(f); } catch (e) { console.error("[Otomatik Bağlan]", e); }
+  }
+}, 1000);
