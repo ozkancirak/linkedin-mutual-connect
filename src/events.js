@@ -72,3 +72,12 @@ setInterval(() => { // LinkedIn içeriği yeniden çizerken üstteki alanı sile
     if (f) try { ensureBox(f); } catch (e) { console.error("[Otomatik Bağlan]", e); }
   }
 }, 1000);
+setInterval(() => {
+  if (location.pathname === lastPath) return;
+  lastPath = location.pathname;
+  const on = onGrow();
+  host.style.display = on ? "" : "none";
+  if (!on) armed = false; // sayfadan çıkınca izleme kapanır, tekrar "Taramayı başlat" gerekir
+  else restoreWhenReady(); // kayıtlı kişileri geri koy (tarama yapmaz)
+}, 1000);
+
