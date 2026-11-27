@@ -77,3 +77,34 @@ async function autoProfile() {
   await report(true, "Otomatik Bağlan: davet gönderildi ✓");
 }
 
+// Başka sekme (ör. profil sekmesi) davet gönderince buradaki durumu da güncelle
+chrome.storage.onChanged.addListener((ch, area) => {
+  if (area !== "local") return;
+  if (ch.sent) refresh();
+  if (!ch.people) return;
+  for (const [k, v] of Object.entries(ch.people.newValue || {})) {
+    if (!v.sent) continue;
+    if (cache[k]) cache[k].sent = true; // yoksa sonraki kayıtta bizim eski halimiz üzerine yazar
+    const e = byUrl.get(k);
+    if (e && !e.sent) {
+      e.sent = true;
+      e.clone.style.opacity = ".55";
+      const cb = [...e.clone.querySelectorAll("button")].find((x) => isConnect(x));
+      if (cb) { cb.textContent = "Gönderildi"; cb.disabled = true; }
+      set({});
+    }
+  }
+});
+if (!onGrow()) autoProfile().catch((e) => console.error("[Otomatik Bağlan]", e));
+
+addEventListener("resize", () => render());
+chrome.storage.local.get(["min", "cap", "dry", "pos", "people"]).then((v) => {
+  cache = v.people || {};
+  if (v.min) s.min = v.min;
+  if (v.cap) s.cap = v.cap;
+  if (v.dry !== undefined) s.dry = v.dry;
+  if (v.pos) moveTo(v.pos.l, v.pos.b);
+  render();
+  refresh();
+  if (onGrow()) restoreWhenReady(); // sayfa yenilenince önceki bulunanlar geri gelir
+});
