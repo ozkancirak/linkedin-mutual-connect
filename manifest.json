@@ -1,0 +1,10 @@
+{
+  "manifest_version": 3,
+  "name": "LinkedIn Mutual Connect",
+  "version": "0.0.1",
+  "description": "Ortak bağlantısı çok olan LinkedIn önerilerini bulur ve davet gönderir. / Finds LinkedIn suggestions with many mutual connections and sends invites.",
+  "permissions": [
+    "storage"
+  ],
+  "content_scripts": []
+}
