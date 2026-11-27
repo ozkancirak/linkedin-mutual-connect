@@ -13,7 +13,8 @@
       ],
       "js": [
         "src/core.js",
-        "src/panel.js"
+        "src/panel.js",
+        "src/people.js"
       ]
     }
   ]
