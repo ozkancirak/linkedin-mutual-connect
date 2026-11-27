@@ -60,12 +60,15 @@ function closePopups() {
 async function sendOne(b, wait = 2000) {
   const snap = () => (b.getAttribute("aria-label") || "") + "|" + (b.innerText || "").trim();
   const before = snap();
+  // Buton DOM'dan koptuysa LinkedIn listeyi yeniden çizmiş olabilir: aynı kişinin Bağlan butonu hâlâ sayfadaysa davet gitmemiştir
+  const who = b.getAttribute("aria-label");
+  const stillConnect = () => !!who && [...document.querySelectorAll("button")].some((x) => x.getAttribute("aria-label") === who && isConnect(x));
   b.click();
   for (let i = 0; i < wait / 40; i++) {
     await sleep(40);
     const send = noteSendBtn();
     if (send) { send.click(); await sleep(120); return { ok: true }; }
-    if (!b.isConnected || snap() !== before) return { ok: true }; // buton tepki verdi
+    if (b.isConnected ? snap() !== before : !stillConnect()) return { ok: true }; // buton tepki verdi
   }
   return { ok: false, why: popupText() };
 }
