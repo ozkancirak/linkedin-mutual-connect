@@ -103,3 +103,19 @@ root.innerHTML = `
     <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>
   </button>
 </div>`;
+document.body.append(host);
+const version = chrome.runtime.getManifest().version; // sürüm tek yerde: manifest.json
+console.log(`[Otomatik Bağlan] v${version} yüklendi`);
+const $ = (id) => root.getElementById(id);
+root.querySelector(".ver").textContent = `v${version}`;
+
+// Halka yanındaki özet: kaç kişi bulundu, bunlardan kaçına davet gidecek
+function info() {
+  if (s.dry) return "Sadece kişi bulur, davet göndermez.";
+  if (!marks.length) return "Henüz kimse bulunmadı. Başlat önce arar, sonra gönderir.";
+  const unsent = marks.filter((m) => !m.sent).length, sentN = marks.length - unsent;
+  const plan = Math.min(unsent, Math.max(0, s.cap - s.today)); // günlük limite kadar, ortağı çok olandan başlayarak
+  return `<b>${marks.length}</b> kişi bulundu${sentN ? ` · ${sentN} gönderildi` : ""}<br>` +
+    (plan ? `<b>${plan}</b> kişiye davet gönderilecek` : unsent ? "Günlük limite ulaşıldı" : "Gönderilecek kişi kalmadı");
+}
+
