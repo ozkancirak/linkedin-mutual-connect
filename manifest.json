@@ -18,7 +18,8 @@
         "src/core.js",
         "src/panel.js",
         "src/people.js",
-        "src/send.js"
+        "src/send.js",
+        "src/events.js"
       ]
     }
   ]
