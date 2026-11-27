@@ -27,3 +27,11 @@ function cardOf(btn) {
   return null;
 }
 
+// --- Sayaçlar: gönderim zamanları kayan 7 günde tutulur ---
+async function counts() {
+  const { sent = [] } = await chrome.storage.local.get("sent");
+  const now = Date.now(), mid = new Date().setHours(0, 0, 0, 0);
+  const wk = sent.filter((t) => now - t < 7 * DAY);
+  return { wk, today: wk.filter((t) => t >= mid).length };
+}
+
