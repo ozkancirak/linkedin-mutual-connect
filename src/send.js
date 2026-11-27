@@ -20,3 +20,38 @@ function noteSendBtn() {
   return deepAll(asBtn).find((x) => (strong.test(x.getAttribute("aria-label") || "") || strong.test((x.innerText || "").trim())) && x.getClientRects().length > 0) || null; // görünür mü
 }
 
+// LinkedIn pencereleri ("Davetinize not eklensin mi?" gibi) çoğu zaman GÖLGE DOM içinde çizer (#interop-outlet).
+// document.querySelectorAll gölge kökün içine bakamaz, o yüzden pencere ekranda görünür ama bizim için yok olurdu.
+// Burada sayfa + gövdenin altındaki tüm gölge kökler birlikte aranır.
+function roots() {
+  const out = [document];
+  const add = (el) => { if (el?.shadowRoot) out.push(el.shadowRoot); };
+  add(document.querySelector("#interop-outlet"));
+  add(document.querySelector('[data-testid="interop-shadowdom"]'));
+  for (const c of document.body.children) add(c);
+  return [...new Set(out)];
+}
+const deepAll = (sel) => roots().flatMap((r) => [...r.querySelectorAll(sel)]);
+const DIALOGS = "[role=dialog],[role=alertdialog],dialog[open],.artdeco-modal";
+
+// Açık pencere ya da uyarı yazısı (gitmeyen davetin sebebini anlamak için)
+const popupText = () => (deepAll(DIALOGS + ",[role=alert],.artdeco-toast-item")[0]?.innerText || "").trim().replace(/\s+/g, " ");
+// Tanı: gitmeyen davetteki pencerenin içini konsola yaz (düğme adları, gölge DOM var mı)
+function dialogInfo() {
+  const d = deepAll(DIALOGS)[0];
+  return {
+    pencereVar: !!d,
+    gölgeKök: !!document.querySelector("#interop-outlet")?.shadowRoot,
+    metin: (d?.innerText || "").trim().replace(/\s+/g, " ").slice(0, 140),
+    butonlar: d ? [...d.querySelectorAll("button,[role=button]")].map((x) => (x.getAttribute("aria-label") || "") + " | " + (x.innerText || "").trim()) : [],
+  };
+}
+// Gitmeyen davetten kalan pencere sonrakileri engellemesin diye kapat
+function closePopups() {
+  for (const d of deepAll(DIALOGS)) {
+    d.querySelector('[aria-label*="Kapat" i],[aria-label*="Dismiss" i],[aria-label*="Close" i],.artdeco-modal__dismiss')?.click();
+  }
+  document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+}
+
+
