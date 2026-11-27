@@ -84,3 +84,21 @@ async function markDone(m) {
   pop();
 }
 
+// Bir kişiyi profil sekmesinde gönderir: arka plan sekmeyi açar, sekmedeki eklenti Bağlantı kur + "Not olmadan gönder"i
+// yapar ve sonucu "connectResult" olarak yazar. Burada o sonuç beklenir, bitince sekme kapatılır.
+async function viaProfile(m) {
+  if (!/^https?:/.test(m.url || "")) return false;
+  const t0 = Date.now();
+  await chrome.storage.local.set({ pendingConnect: { url: m.url, name: m.name, t: t0, auto: true } });
+  const res = await chrome.runtime.sendMessage({ type: "openProfile", url: m.url }).catch(() => null);
+  if (!res) { console.warn("[Otomatik Bağlan] sekme açılamadı: eklentiyi chrome://extensions sayfasında yeniden yükle"); return false; }
+  let ok = false;
+  for (let i = 0; i < 160 && s.status === "running"; i++) { // en çok ~40 sn
+    await sleep(250);
+    const { connectResult: r } = await chrome.storage.local.get("connectResult");
+    if (r && r.url === m.url && r.t >= t0) { ok = r.ok; break; }
+  }
+  chrome.runtime.sendMessage({ type: "closeTab", tabId: res.tabId }).catch(() => {});
+  return ok;
+}
+
