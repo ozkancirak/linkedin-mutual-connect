@@ -150,3 +150,35 @@ function refreshBox() {
   box.style.display = marks.length ? "" : "none";
 }
 
+// Kaydettiğimiz kart HTML'ini güvenli şekilde elemana çevir (script ve on* olayları ayıklanır)
+function htmlToEl(html) {
+  const d = new DOMParser().parseFromString(html, "text/html");
+  d.querySelectorAll("script,iframe,object,embed").forEach((n) => n.remove());
+  d.body.querySelectorAll("*").forEach((n) => [...n.attributes].forEach((a) => /^on/i.test(a.name) && n.removeAttribute(a.name)));
+  const el = d.body.firstElementChild;
+  return el && document.importNode(el, true);
+}
+
+// Önbellekteki kişileri tarama yapmadan üstteki alana geri koyar
+function restore() {
+  const f = firstConnect();
+  if (!f) return;
+  for (const [url, p] of Object.entries(cache)) {
+    if (!p.html || p.sent || p.n < s.min || byUrl.has(url) || Date.now() - p.t > 7 * DAY) continue;
+    try { ensureBox(f); } catch (e) { console.error("[Otomatik Bağlan] üst alan oluşturulamadı", e); return; }
+    const clone = htmlToEl(p.html);
+    if (clone) addEntry({ card: null, item: null, clone, src: null, url, isNew: false }, p.n);
+  }
+  refreshBox();
+  set({ found: marks.length });
+  console.log("[Otomatik Bağlan] geri yüklendi:", marks.length, "kişi (kayıtlı:", Object.keys(cache).length + ")");
+}
+let restoring = false;
+async function restoreWhenReady() {
+  if (restoring) return;
+  restoring = true;
+  for (let i = 0; i < 40 && !firstConnect(); i++) await sleep(500); // ilk kartlar gelsin (en fazla ~20 sn)
+  if (onGrow()) restore();
+  restoring = false;
+}
+
