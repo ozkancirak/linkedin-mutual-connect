@@ -17,11 +17,6 @@ jobs:
         with:
           node-version: 20
       - name: Static checks and tests
-        # The very first commits have no package.json yet; there is nothing to check until it exists.
         run: |
-          if [ -f package.json ]; then
-            npm run check
-            npm test
-          else
-            echo "No package.json yet, nothing to check"
-          fi
+          npm run check
+          npm test
