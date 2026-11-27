@@ -8,7 +8,7 @@ const vm = require("node:vm");
 
 const src = fs.readFileSync(path.join(__dirname, "..", "src", "core.js"), "utf8");
 // Üst düzey `const`lar sanal ortamın global nesnesine yazılmaz, o yüzden sonda bir ifadeyle dışarı veriyoruz.
-const { CONNECT, isConnect } = vm.runInNewContext(src + "\n;({ CONNECT, isConnect })", {});
+const { CONNECT, mutualCount, isConnect } = vm.runInNewContext(src + "\n;({ CONNECT, mutualCount, isConnect })", {});
 
 // Bir DOM düğmesini taklit eder: etiketi (aria-label) ve görünen yazısı
 const btn = (aria, text) => ({ getAttribute: () => aria, innerText: text });
@@ -34,4 +34,22 @@ test("isConnect: diğer butonları tanımaz", () => {
   assert.ok(!isConnect(btn("Beklemede", "Gönderildi")));
   assert.ok(!isConnect(btn("", "Bağlantılar"))); // menü bağlantısı, "bağlantı kur" değil
   assert.ok(!isConnect(btn("", "Not olmadan gönder")));
+});
+
+test("mutualCount: sayı yazan metinler", () => {
+  assert.equal(mutualCount("12 mutual connections"), 12);
+  assert.equal(mutualCount("Eda and 5 other mutual connections"), 6); // adı geçen kişi + 5 diğeri
+  assert.equal(mutualCount("İsmail ve 334 diğer ortak bağlantı"), 335); // Türkçe arayüz
+  assert.equal(mutualCount("Durmuş ve 273 diğer ortak bağlantı"), 274);
+});
+
+test("mutualCount: sayı yazmayan metinler", () => {
+  assert.equal(mutualCount("Eda is a mutual connection"), 1);
+  assert.equal(mutualCount("Eda ortak bağlantı"), 1);
+});
+
+test("mutualCount: ortak bağlantı olmayan metinler", () => {
+  assert.equal(mutualCount("Based on your profile"), 0);
+  assert.equal(mutualCount("Son faaliyetlerinize göre tanıyabileceğiniz kişiler"), 0);
+  assert.equal(mutualCount(""), 0);
 });
