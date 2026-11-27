@@ -8,7 +8,6 @@ const WEEK_CAP = 100; // LinkedIn'in yaklaşık haftalık tavanı (kayan 7 gün)
 const DAY = 864e5;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const rand = (a, b) => a + Math.random() * (b - a);
-const label = (el) => (el.getAttribute("aria-label") || el.innerText || "").trim();
 // Hem aria-label hem görünen yazı denenir: dile göre biri farklı olabilir (ör. Türkçede etiket başka, yazı "Bağlantı kur")
 const isConnect = (b) => CONNECT.test((b.getAttribute("aria-label") || "").trim()) || CONNECT.test((b.innerText || "").trim());
 const mutualCount = (text) => {
@@ -33,5 +32,10 @@ async function counts() {
   const now = Date.now(), mid = new Date().setHours(0, 0, 0, 0);
   const wk = sent.filter((t) => now - t < 7 * DAY);
   return { wk, today: wk.filter((t) => t >= mid).length };
+}
+// Gönderilen daveti sayaca ekler (7 günden eskiler atılır)
+async function recordSent() {
+  const { sent = [] } = await chrome.storage.local.get("sent");
+  await chrome.storage.local.set({ sent: [...sent.filter((t) => Date.now() - t < 7 * DAY), Date.now()] });
 }
 

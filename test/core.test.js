@@ -8,7 +8,10 @@ const vm = require("node:vm");
 
 const src = fs.readFileSync(path.join(__dirname, "..", "src", "core.js"), "utf8");
 // Üst düzey `const`lar sanal ortamın global nesnesine yazılmaz, o yüzden sonda bir ifadeyle dışarı veriyoruz.
-const { CONNECT, mutualCount, isConnect } = vm.runInNewContext(src + "\n;({ CONNECT, mutualCount, isConnect })", {});
+// Sahte chrome.storage: sayaç yardımcıları gerçek depolama olmadan denenir
+const store = {};
+const chrome = { storage: { local: { get: async (k) => ({ [k]: store[k] }), set: async (o) => Object.assign(store, o) } } };
+const { CONNECT, mutualCount, isConnect, recordSent } = vm.runInNewContext(src + "\n;({ CONNECT, mutualCount, isConnect, recordSent })", { chrome });
 
 // Bir DOM düğmesini taklit eder: etiketi (aria-label) ve görünen yazısı
 const btn = (aria, text) => ({ getAttribute: () => aria, innerText: text });
@@ -52,4 +55,13 @@ test("mutualCount: ortak bağlantı olmayan metinler", () => {
   assert.equal(mutualCount("Based on your profile"), 0);
   assert.equal(mutualCount("Son faaliyetlerinize göre tanıyabileceğiniz kişiler"), 0);
   assert.equal(mutualCount(""), 0);
+});
+
+test("recordSent: yeni zamanı ekler, 7 günden eskileri atar", async () => {
+  const now = Date.now();
+  store.sent = [now - 8 * 864e5, now - 1000]; // biri kayan 7 günün dışında
+  await recordSent();
+  assert.equal(store.sent.length, 2);
+  assert.equal(store.sent[0], now - 1000);
+  assert.ok(store.sent[1] >= now);
 });

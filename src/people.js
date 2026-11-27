@@ -65,7 +65,6 @@ const personKey = (item) => profileUrl(item) || "t:" + item.innerText.split("\n"
 const markSentUrl = (u) => {
   if (u) { cache[u] = { ...(cache[u] || { n: 0 }), t: Date.now(), sent: true }; saveCache(); }
 };
-const markSent = (card) => markSentUrl(card && profileUrl(card));
 
 const marks = []; // {card, item, clone, src, url, isNew}: üstteki alandaki her kişi
 const byUrl = new Map(); // profil adresi -> kayıt (aynı kişiyi iki kez eklememek için)
@@ -110,8 +109,7 @@ function wire(entry) {
       if (r.ok) {
         entry.sent = true;
         markSentUrl(entry.url);
-        const { sent = [] } = await chrome.storage.local.get("sent");
-        await chrome.storage.local.set({ sent: [...sent.filter((t) => Date.now() - t < 7 * DAY), Date.now()] });
+        await recordSent();
         refresh();
         cb.textContent = "Gönderildi";
         cb.disabled = true;

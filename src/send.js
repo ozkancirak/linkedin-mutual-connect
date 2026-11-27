@@ -73,16 +73,20 @@ async function sendOne(b, wait = 2000) {
   return { ok: false, why: popupText() };
 }
 
-// Gönderildi: kaydet, kopyayı soluklaştır, sayaçları güncelle
-async function markDone(m) {
-  m.sent = true;
-  markSentUrl(m.url); // bir daha önerme
+// Kopyadaki kişiyi "Gönderildi" göster: çerçeveyi kaldır, soluklaştır, düğmeyi kilitle
+function markClone(m) {
   m.clone.style.boxShadow = "";
   m.clone.style.opacity = ".55";
   const cb = [...m.clone.querySelectorAll("button")].find((x) => isConnect(x));
   if (cb) { cb.textContent = "Gönderildi"; cb.disabled = true; }
-  const { sent = [] } = await chrome.storage.local.get("sent");
-  await chrome.storage.local.set({ sent: [...sent.filter((t) => Date.now() - t < 7 * DAY), Date.now()] });
+}
+
+// Gönderildi: kaydet, kopyayı soluklaştır, sayaçları güncelle
+async function markDone(m) {
+  m.sent = true;
+  markSentUrl(m.url); // bir daha önerme
+  markClone(m);
+  await recordSent();
   await refresh();
   pop();
 }
@@ -193,10 +197,7 @@ async function run() {
       if (ok) {
         failed.splice(failed.indexOf(f), 1);
         f[0].sent = true;
-        f[0].clone.style.boxShadow = "";
-        f[0].clone.style.opacity = ".55";
-        const cb = [...f[0].clone.querySelectorAll("button")].find((x) => isConnect(x));
-        if (cb) { cb.textContent = "Gönderildi"; cb.disabled = true; }
+        markClone(f[0]);
         await refresh();
         pop();
       } else f[1] = "profil sekmesinde de gitmedi";
