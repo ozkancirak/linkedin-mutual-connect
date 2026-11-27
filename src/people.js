@@ -233,3 +233,20 @@ function resetMarks() {
   if (box) box.style.display = "none";
 }
 
+// Sayfa değişince (yeni kart yüklenince) kendiliğinden tara. Gönderme moduna dokunmaz.
+let t;
+new MutationObserver(() => {
+  clearTimeout(t);
+  t = setTimeout(() => { if (armed && s.dry && onGrow()) scanOnce(); }, 600);
+}).observe(document.body, { childList: true, subtree: true });
+
+// Kaydırdıktan sonra yeni buton ya da yeni yükseklik gelene kadar bekler (en fazla ms). Geldiyse hemen true döner.
+async function waitGrow(n0, h0, ms) {
+  const count = () => [...document.querySelectorAll("button")].filter((b) => isConnect(b) && !box?.contains(b)).length;
+  for (const t0 = Date.now(); Date.now() - t0 < ms && s.status === "running"; ) {
+    await sleep(50);
+    if (count() > n0 || document.documentElement.scrollHeight > h0) { await sleep(80); return true; } // gelenler otursun
+  }
+  return false;
+}
+
