@@ -30,3 +30,36 @@ root.addEventListener("change", (e) => {
 // Yazarken LinkedIn'in klavye kısayolları (ör. "/" ile arama) tetiklenmesin
 for (const ev of ["keydown", "keyup", "keypress"]) root.addEventListener(ev, (e) => e.stopPropagation());
 
+// Hapı sürükleyerek istediğin yere taşı (konum hatırlanır)
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+const moveTo = (l, b) => {
+  host.style.transform = "none";
+  host.style.left = clamp(l, 0, innerWidth - 296) + "px";
+  host.style.bottom = clamp(b, 0, innerHeight - 60) + "px";
+};
+let drag = null;
+root.addEventListener("pointerdown", (e) => {
+  const pill = e.target.closest("#pill");
+  if (!pill) return;
+  const r = host.getBoundingClientRect();
+  drag = { x: e.clientX, y: e.clientY, l: r.left, b: innerHeight - r.bottom, moved: false };
+  pill.setPointerCapture(e.pointerId);
+});
+root.addEventListener("pointermove", (e) => {
+  if (!drag) return;
+  const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+  if (!drag.moved && Math.hypot(dx, dy) < 5) return;
+  drag.moved = true;
+  moveTo(drag.l + dx, drag.b - dy);
+  if (s.open) render(); // sürüklerken yön güncellensin
+});
+root.addEventListener("pointerup", () => {
+  if (drag?.moved) {
+    dragged = true; // hemen ardından gelen click paneli açmasın
+    const r = host.getBoundingClientRect();
+    chrome.storage.local.set({ pos: { l: r.left, b: innerHeight - r.bottom } });
+    render();
+  }
+  drag = null;
+});
+
