@@ -19,14 +19,16 @@ function toast(text) {
 async function autoProfile() {
   const { pendingConnect: p } = await chrome.storage.local.get("pendingConnect");
   if (!p || Date.now() - p.t > 90000) return;
-  // Bu sekme gerçekten o kişinin profili mi? Adres ya da ad tutmalı (LinkedIn adresi sadeleştirebilir).
-  // Tıklamadan hemen sonra (25 sn) açılmış bir /in/ sayfasıysa da kabul: bizim açtığımız sekme odur.
+  // Bu sekme gerçekten o kişinin profili mi? Adres TAM tutmalı ya da ad tutmalı (LinkedIn adresi sadeleştirebilir).
+  // Önek karşılaştırması yok: /in/ali ile /in/ali-yilmaz-1a2b3c farklı kişiler. "Yakın zamanda açılan herhangi bir /in/"
+  // kabulü de yok: kullanıcının elle açtığı başka bir profile davet giderdi.
   const here = normUrl(location.origin + location.pathname), want = normUrl(p.url);
-  let ok = here.startsWith(want) || want.startsWith(here) || (Date.now() - p.t < 25000 && location.pathname.startsWith("/in/"));
-  if (!ok) {
+  let ok = here === want;
+  if (!ok && location.pathname.startsWith("/in/")) {
     let h1 = null;
     for (let i = 0; i < 80 && !h1; i++) { h1 = document.querySelector("main h1"); if (!h1) await sleep(100); }
-    ok = !!(p.name && h1 && (normName(h1.textContent).includes(normName(p.name)) || normName(p.name).includes(normName(h1.textContent))));
+    const seen = normName(h1?.textContent), name = normName(p.name);
+    ok = !!(name && seen && (seen.includes(name) || name.includes(seen)));
   }
   if (!ok) return;
   await chrome.storage.local.remove("pendingConnect"); // tek kullanımlık
