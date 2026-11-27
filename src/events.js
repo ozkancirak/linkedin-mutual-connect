@@ -20,6 +20,7 @@ root.addEventListener("click", (e) => {
 
 // Min. ortak ya da günlük limit: sınırlar içinde kaydet. Min. değişince bulunanlar baştan süzülür.
 function setNum(k, v) {
+  if (s.status === "running") return; // çalışırken değişmesin: min değişince bulunanlar silinir, gönderim döngüsü listesiz kalırdı
   const [lo, hi] = k === "min" ? [1, 1000] : [1, 100];
   s[k] = Math.max(lo, Math.min(hi, Math.round(v) || s[k]));
   chrome.storage.local.set({ min: s.min, cap: s.cap });

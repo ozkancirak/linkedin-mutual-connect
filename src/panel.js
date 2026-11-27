@@ -68,6 +68,7 @@ root.innerHTML = `
   .step{display:flex;align-items:center;border:1px solid var(--line);border-radius:16px;overflow:hidden}
   .step button{all:unset;width:30px;height:28px;text-align:center;line-height:26px;font-size:17px;color:var(--blue);cursor:pointer;transition:background .15s}
   .step button:hover{background:#eaf4fe} .step button:active{background:#d0e8ff}
+  .step button:disabled{background:none;color:#999;cursor:default} .step input:disabled{color:#999;cursor:default} /* çalışırken kilitli */
   .step input{all:unset;width:36px;text-align:center;font-size:13px;font-weight:600;color:var(--text);cursor:text;border-radius:6px}
   .step input:focus{background:#eaf4fe}
   .step input::-webkit-outer-spin-button,.step input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
@@ -145,6 +146,7 @@ function render() {
   $("seg").className = "seg " + (s.dry ? "scan" : "send");
   root.querySelectorAll("[data-mode]").forEach((b) => b.classList.toggle("on", (b.dataset.mode === "scan") === s.dry));
   $("go").textContent = s.status === "running" ? "Durdur" : s.dry ? "Taramayı başlat" : "Başlat ve gönder";
+  root.querySelectorAll(".step button,.step input").forEach((x) => (x.disabled = s.status === "running")); // çalışırken min/limit değişmesin
 }
 const pop = () => {
   const r = $("ring");
