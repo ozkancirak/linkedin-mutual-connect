@@ -118,3 +118,35 @@ function wire(entry) {
   }, true);
 }
 
+function addEntry(entry, n) {
+  entry.n = n;
+  entry.name = (entry.clone.querySelector('a[href*="/in/"]')?.textContent || "").trim(); // profil sekmesinde kişiyi doğrulamak için
+  // Kopyayı KENDİ kutumuza sarıyoruz: rozet, çerçeve ve soluklaştırma LinkedIn'in elemanına değil bizim kutuya bağlı olsun.
+  // (LinkedIn elemanı "display:contents" gibi kutusuz olursa rozet sayfanın başka yerine yapışıyordu.)
+  const inner = entry.clone;
+  inner.style.cssText += ";flex:1 1 auto;min-width:0;max-width:none;margin:0";
+  const wrap = document.createElement("div");
+  wrap.style.cssText = "position:relative;display:flex;min-width:0;border-radius:8px";
+  wrap.style.order = -n; // ortağı çok olan önce
+  // Köşede ortak sayısı rozeti: sıralamayı gözle görebilesin
+  const badge = document.createElement("span");
+  badge.textContent = n + " ortak";
+  badge.style.cssText = "position:absolute;top:8px;left:8px;z-index:3;background:#0a66c2;color:#fff;border-radius:10px;padding:1px 8px;font:600 11px/18px -apple-system,system-ui,sans-serif;pointer-events:none";
+  entry.badge = badge;
+  wrap.append(inner, badge);
+  entry.clone = wrap;
+  wire(entry);
+  boxGrid.append(wrap);
+  marks.push(entry);
+  if (entry.url) byUrl.set(entry.url, entry);
+}
+
+function refreshBox() {
+  if (!box) return;
+  const sorted = [...marks].sort((a, b) => b.n - a.n).map((m) => m.clone); // ortağı çok olan başta
+  if (sorted.some((c, i) => boxGrid.children[i] !== c)) boxGrid.append(...sorted);
+  const fresh = marks.filter((m) => m.isNew).length; // önbellekte olmayan, yani ilk kez gördüğümüz
+  box.firstChild.textContent = `Ortak bağlantısı olanlar (${marks.length}${fresh && fresh < marks.length ? ` · ${fresh} yeni` : ""})`;
+  box.style.display = marks.length ? "" : "none";
+}
+
