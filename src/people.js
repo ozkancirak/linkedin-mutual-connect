@@ -45,9 +45,17 @@ let cache = {};
 let saveT;
 const saveCache = () => {
   clearTimeout(saveT);
-  saveT = setTimeout(() => {
+  saveT = setTimeout(async () => {
     for (const k in cache) if (Date.now() - cache[k].t > 7 * DAY) delete cache[k];
-    chrome.storage.local.set({ people: cache });
+    // Kart HTML'i yüzünden chrome.storage.local kotası (~10 MB) dolabilir: en eski %10'u atıp yeniden dene.
+    // Kota dışı bir hata (ör. eklenti yeniden yüklendi) kayıt silmeyi gerektirmez: sadece yaz ve bırak.
+    for (;;) {
+      try { await chrome.storage.local.set({ people: cache }); break; } catch (e) {
+        const old = Object.keys(cache).sort((a, b) => cache[a].t - cache[b].t);
+        if (!/quota/i.test(e?.message) || !old.length) return console.error("[Otomatik Bağlan] kayıt başarısız", e);
+        for (const k of old.slice(0, Math.ceil(old.length / 10))) delete cache[k];
+      }
+    }
     console.log("[Otomatik Bağlan] kaydedildi:", Object.keys(cache).length, "kişi");
   }, 500);
 };
