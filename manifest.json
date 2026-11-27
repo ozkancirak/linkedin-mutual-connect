@@ -19,7 +19,8 @@
         "src/panel.js",
         "src/people.js",
         "src/send.js",
-        "src/events.js"
+        "src/events.js",
+        "src/profile.js"
       ]
     }
   ]
