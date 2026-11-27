@@ -37,3 +37,25 @@ function ensureBox(firstBtn) {
   anchor.parentElement.insertBefore(box, anchor);
 }
 
+// --- Test modu: uygun kartları mavi çerçeveler ve en üste taşır, hiçbir şey göndermez ---
+// Önbellek: son 7 günde bulduğumuz kişiler {profilUrl: {n, t, sent, html}}.
+// html = kartın kopyası. Sayfa yenilenince üstteki alan bununla, tarama yapmadan geri gelir.
+// Davet gönderdiklerimizi bir daha önermeyiz.
+let cache = {};
+let saveT;
+const saveCache = () => {
+  clearTimeout(saveT);
+  saveT = setTimeout(() => {
+    for (const k in cache) if (Date.now() - cache[k].t > 7 * DAY) delete cache[k];
+    chrome.storage.local.set({ people: cache });
+    console.log("[Otomatik Bağlan] kaydedildi:", Object.keys(cache).length, "kişi");
+  }, 500);
+};
+const profileUrl = (card) => card.querySelector('a[href*="/in/"]')?.href.split("?")[0];
+// Kişi anahtarı: profil adresi; bulunamazsa kartın ilk iki satırı (ad + başlık)
+const personKey = (item) => profileUrl(item) || "t:" + item.innerText.split("\n").map((x) => x.trim()).filter(Boolean).slice(0, 2).join("|");
+const markSentUrl = (u) => {
+  if (u) { cache[u] = { ...(cache[u] || { n: 0 }), t: Date.now(), sent: true }; saveCache(); }
+};
+const markSent = (card) => markSentUrl(card && profileUrl(card));
+
