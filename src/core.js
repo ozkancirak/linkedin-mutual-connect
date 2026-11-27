@@ -17,3 +17,13 @@ const mutualCount = (text) => {
   return MUTUAL_ANY.test(text) ? 1 : 0; // "Eda is a mutual connection" => 1
 };
 
+// Bağlan butonundan yukarı çık: tek butonlu ve "ortak" metni içeren ilk ata = kart
+function cardOf(btn) {
+  for (let el = btn.parentElement; el; el = el.parentElement) {
+    const btns = [...el.querySelectorAll("button")].filter((b) => isConnect(b));
+    if (btns.length > 1) return null;
+    if (mutualCount(el.innerText)) return el;
+  }
+  return null;
+}
+
